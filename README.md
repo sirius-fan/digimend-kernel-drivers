@@ -1,6 +1,90 @@
 DIGImend kernel drivers
 =======================
 
+自用版本，更改适配高漫M7
+
+
+
+依赖
+
+```
+sudo pacman -S linux-headers
+```
+
+PKGBUILD 文件
+```
+_pkgbase=digimend-kernel-drivers
+pkgname=digimend-kernel-drivers-dkms-git
+pkgver=11.pv.r0.g3a2b59e
+pkgrel=1
+
+pkgdesc='Linux kernel modules (DKMS) for non-Wacom USB graphics tablets. Git version.'
+arch=('any')
+url='https://digimend.github.io'
+license=('GPL2')
+
+depends=('dkms')
+makedepends=('git')
+conflicts=("$_pkgbase" "$_pkgbase"-dkms)
+provides=("$_pkgbase"-dkms)
+
+source=('git+https://github.com/sirius-fan/digimend-kernel-drivers.git')
+
+md5sums=('SKIP')
+
+
+pkgver() {
+  cd "$_pkgbase"
+  git describe --long | sed 's/^v//;s/\([^-]*-g\)/r\1/;s/-/./g'
+}
+
+package() {
+  # Install
+  cd "$_pkgbase"
+
+  install -Dm 0644 depmod.conf "$pkgdir"/etc/depmod.d/digimend.conf
+  install -Dm 0755 hid-rebind "$pkgdir"/usr/bin/hid-rebind
+  install -Dm 0644 udev.rules "$pkgdir"/usr/lib/udev/rules.d/90-hid-rebind.rules
+
+  install -Dm 0644 xorg.conf "$pkgdir"/usr/share/X11/xorg.conf.d/50-digimend.conf
+
+  # Copy sources (including Makefile)
+  mkdir -p "$pkgdir"/usr/src/"$_pkgbase"-"$pkgver"
+  cp -rf ./* "$pkgdir"/usr/src/"$_pkgbase"-"$pkgver"
+
+  # Set version
+  sed "s/PACKAGE_VERSION=.*/PACKAGE_VERSION=\"$pkgver\"/g" \
+      -i "$pkgdir"/usr/src/"$_pkgbase"-"$pkgver"/dkms.conf
+
+  # Remove unneeded files
+  rm -rf "$pkgdir"/usr/src/"$_pkgbase"-"$pkgver"/debian
+  rm "$pkgdir"/usr/src/"$_pkgbase"-"$pkgver"/COPYING
+  rm "$pkgdir"/usr/src/"$_pkgbase"-"$pkgver"/udev.rules
+  rm "$pkgdir"/usr/src/"$_pkgbase"-"$pkgver"/depmod.conf
+  rm "$pkgdir"/usr/src/"$_pkgbase"-"$pkgver"/hid-rebind
+  rm "$pkgdir"/usr/src/"$_pkgbase"-"$pkgver"/README.md
+  rm "$pkgdir"/usr/src/"$_pkgbase"-"$pkgver"/xorg.conf
+}
+```
+接下来
+```
+makepkg -s
+```
+
+如果ver有问题
+则git仓库需要打tag
+
+```
+git tag -a v11.pv -m "private version"
+```
+
+安装
+```
+sudo pacman -U ***.pkg.tar.zst
+```
+
+
+
 [![Travis CI Build Status][travis_ci_badge]][travis_ci_page]
 
 This is a collection of graphics tablet drivers for the Linux kernel, produced
